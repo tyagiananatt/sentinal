@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  url         String
+  githubUrl   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  source      ProjectSource?
+  profile     ProjectProfile?
+  requirements Requirement[]
+  risks       Risk[]
+  tester      Tester?
+  sessions    AgentSession[]
+}
+
+model ProjectSource {
+  id        String   @id @default(cuid())
+  projectId String   @unique
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  commitHash String?
+  fileCount  Int      @default(0)
+  hotspots   String   // JSON string of files
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ProjectProfile {
+  id             String   @id @default(cuid())
+  projectId      String   @unique
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  title          String
+  type           String
+  purpose        String
+  mainFeatures   String   // JSON string
+  aiComponents   String   // JSON string
+  tools          String   // JSON string
+  externalServices String // JSON string
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Requirement {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  requirementId String
+  description String
+  expected    String
+  criticality String
+  source      String
+  
+  risks       Risk[]
+  testSpecs   TestSpecification[]
+  
+  createdAt   DateTime @default(now())
+}
+
+model Risk {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  requirementId String?
+  requirement   Requirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  
+  description   String
+  type          String   // CURRENT, FUTURE
+  reasons       String   // JSON string
+  severity      String
+  
+  testSpecs     TestSpecification[]
+  
+  createdAt     DateTime @default(now())
+}
+
+model Tester {
+  id            String   @id @default(cuid())
+  projectId     String   @unique
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  name          String
+  purpose       String
+  targetWorkflows String // JSON
+  personas      String   // JSON
+  objectives    String   // JSON
+  riskAreas     String   // JSON
+  strategies    String   // JSON
+  adapters      String   // JSON
+  
+  createdAt     DateTime @default(now())
+}
+
+model TestSpecification {
+  id            String   @id @default(cuid())
+  testId        String
+  requirementId String?
+  requirement   Requirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  riskId        String?
+  risk          Risk?    @relation(fields: [riskId], references: [id], onDelete: SetNull)
+  
+  objective     String
+  category      String
+  parameters    String   // JSON
+  inputScenario String
+  expected      String
+  successCriteria String
+  adapter       String
+  
+  executions    TestExecution[]
+  
+  createdAt     DateTime @default(now())
+}
+
+model TestExecution {
+  id          String   @id @default(cuid())
+  testSpecId  String
+  testSpec    TestSpecification @relation(fields: [testSpecId], references: [id], onDelete: Cascade)
+  
+  status      String   // RUNNING, PASSED, FAILED, ERROR
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  inputUsed   String?
+  actualOutput String?
+  logs        String?
+  
+  findings    Finding[]
+}
+
+model Finding {
+  id            String   @id @default(cuid())
+  executionId   String
+  execution     TestExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  
+  status        String   // SUSPECTED, VALIDATED, REPRODUCED, CONFIRMED
+  description   String
+  impact        String
+  confidence    String
+  reproductionRate String?
+  rootCause     String?
+  
+  evidence      Evidence[]
+  
+  createdAt     DateTime @default(now())
+}
+
+model Evidence {
+  id          String   @id @default(cuid())
+  findingId   String
+  finding     Finding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  
+  type        String   // SOURCE, RUNTIME, LOG, SCREENSHOT
+  content     String
+  source      String
+  
+  createdAt   DateTime @default(now())
+}
+
+model AgentSession {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  status      String   // CONNECTED, DISCONNECTED
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  
+  contextDump String?
+  
+  permissions PermissionRequest[]
+  telemetry   TelemetryEvent[]
+}
+
+model PermissionRequest {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  capability  String
+  reason      String
+  status      String   // PENDING, APPROVED, DENIED
+  result      String?  // JSON
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TelemetryEvent {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  type        String
+  content     String   // JSON
+  
+  createdAt   DateTime @default(now())
+}
