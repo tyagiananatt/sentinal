@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { callGroq } from '@/../lib/groq/client';
+import { generateAIContent } from '@/../lib/ai/client';
 
 const prisma = new PrismaClient();
 
@@ -45,13 +45,12 @@ WARNING: Ensure your JSON syntax is strictly correct, paying close attention to 
 }
 `;
 
-    const responseText = await callGroq(
+    const data = await generateAIContent(
       "You are the Sentinel Intelligence Core.",
       prompt,
-      true // JSON Mode
+      true, // JSON Mode
+      'groq'
     );
-
-    const data = JSON.parse(responseText);
 
     return NextResponse.json({ categories: data.categories });
   } catch (error) {

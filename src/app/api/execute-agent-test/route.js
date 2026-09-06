@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenAI } from '@google/genai';
-import { callGroq } from '@/../lib/groq/client';
+import { generateAIContent } from '@/../lib/ai/client';
 
 const prisma = new PrismaClient();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
 
 export async function POST(request) {
   try {
@@ -65,16 +62,9 @@ WARNING: You must properly escape all internal double quotes inside string value
 }
 `;
 
-    const planRes = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: planPrompt,
-      config: { temperature: 0.1, responseMimeType: "application/json" }
-    });
-    
-    let planText = (planRes.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    let plan = {};
+    let plan;
     try {
-      plan = JSON.parse(planText);
+      plan = await generateAIContent(null, planPrompt, true, 'gemini');
     } catch(e) {
       return NextResponse.json({ error: 'AI failed to generate a valid test plan.' }, { status: 500 });
     }
@@ -138,10 +128,11 @@ Write it in clean HTML format. Be concise but highly analytical.
 Use HTML tags like <h2>, <h3>, <ul>, <li>, <strong>, and proper <table> tags for tabular data. Do NOT use markdown.
 `;
 
-    const evalResText = await callGroq(
+    const evalResText = await generateAIContent(
       "You are the Sentinel Evaluation Engine.",
       evalPrompt,
-      false // No JSON mode
+      false, // No JSON mode
+      'groq'
     );
 
     return NextResponse.json({ success: true, result: evalResText });

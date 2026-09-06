@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
+import { generateAIContent } from '@/../lib/ai/client';
 
 export async function POST(request) {
   try {
@@ -28,13 +25,9 @@ ${report}
 Write the simplified version in clean HTML format. Use tags like <h2>, <ul>, <li>, and <p>. Do NOT use markdown.
 `;
 
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: { temperature: 0.5 }
-    });
+    const responseText = await generateAIContent(null, prompt, false, 'gemini');
 
-    return NextResponse.json({ success: true, simplified: response.text });
+    return NextResponse.json({ success: true, simplified: responseText });
   } catch (error) {
     console.error('Simplify Report API Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

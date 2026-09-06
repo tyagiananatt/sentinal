@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { GoogleGenAI } from '@google/genai';
+import { generateAIContent } from '@/../lib/ai/client';
 
 const prisma = new PrismaClient();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const MODEL_NAME = 'gemini-3.6-flash';
 
 export async function POST(request) {
   try {
@@ -57,14 +55,7 @@ Format:
 }
 `;
 
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: prompt,
-      config: { temperature: 0.2, responseMimeType: "application/json" }
-    });
-
-    const text = (response.text || '').replace(/```json/gi, '').replace(/```/g, '').trim();
-    const data = JSON.parse(text);
+    const data = await generateAIContent(null, prompt, true, 'gemini');
 
     return NextResponse.json(data);
   } catch (error) {

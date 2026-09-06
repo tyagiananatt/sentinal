@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { callGroq } from '@/../lib/groq/client';
+import { generateAIContent } from '@/../lib/ai/client';
 
 const prisma = new PrismaClient();
 
@@ -41,10 +41,11 @@ Use sections like:
 - Maintenance Overhead Forecast
 `;
 
-    const report = await callGroq(
+    const report = await generateAIContent(
       "You are the Sentinel Future Risk Profiler.",
       prompt,
-      false
+      false,
+      'groq'
     );
 
     return NextResponse.json({ success: true, report });
