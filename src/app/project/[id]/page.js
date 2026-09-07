@@ -81,14 +81,19 @@ export default async function ProjectPage({ params }) {
         </div>
       )}
 
+
+       {/* Deep Connection Module */}
+      <AgentConnection projectId={id} />
+
+      
       {/* AI Usage Detector Module */}
       <AiUsageDetector projectId={id} />
 
       {/* Future Risk Profiler Module */}
       <FutureRiskProfiler projectId={id} />
 
-      {/* Deep Connection Module */}
-      <AgentConnection projectId={id} />
+
+     
 
       {/* Tester Generation Module */}
       <TesterGeneration 
